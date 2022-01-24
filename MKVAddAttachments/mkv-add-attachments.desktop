@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+MimeType=video/x-matroska;
+Actions=_SEPARATOR_;mkv-add-attachments
+TryExec=mkv-add-attachments
+X-KDE-Submenu=MKV Actions
+
+[Desktop Action mkv-add-attachments]
+Name=Add attachments in file
+Name[fr]=Ajouter des pièces jointes dans le fichier
+Icon=tag-new
+Exec=mkv-add-attachments %u

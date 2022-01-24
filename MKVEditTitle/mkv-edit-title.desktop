@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+MimeType=video/x-matroska;
+Actions=_SEPARATOR_;mkv-edit-title
+TryExec=mkv-edit-title
+X-KDE-Submenu=MKV Actions
+
+[Desktop Action mkv-edit-title]
+Name=Edit the title of the file
+Name[fr]=Modifier le titre du fichier
+Icon=tag-edit
+Exec=mkv-edit-title %u

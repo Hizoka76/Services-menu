@@ -1,0 +1,165 @@
+#!/bin/bash
+
+#############
+## Version ##
+#############
+# v0.1 - 2021/09/19
+
+
+# Fonction de vérification d'un fichier MKV
+function MKVFileCheck
+{
+    # $1 : Doit être une url
+
+    local ErrorText
+
+    # Vérifie que le fichier existe
+    if [[ ! -f "${1}" ]]
+    then
+        if [[ "${LANG}" == fr* ]]
+        then
+            ErrorText="Le fichier <b>${1}</b> n'existe pas !"
+        else
+            ErrorText="The <b>${1}</b> file doesn't exist!"
+        fi
+
+    # Vérifie que le fichier est de type matroska
+    elif [[ $(mimetype -b "${1}") != "video/x-matroska" ]]
+    then
+        if [[ "${LANG}" == fr* ]]
+        then
+            ErrorText="Le fichier <b>${1}</b> n'est pas un fichier matroska (mkv) !"
+        else
+            ErrorText="The <b>${1}</b> file isn't a matroska file (mkv)!"
+        fi
+    fi
+
+    # S'il y a une erreur
+    if [[ "${ErrorText}" ]]
+    then
+        if [[ "${LANG}" == fr* ]]
+        then
+            ErrorMsg "Vignettes MKV" "${ErrorText}" "${1}"
+        else
+            ErrorMsg "MKV Thumbnails" "${ErrorText}" "${1}"
+        fi
+
+        return 1
+    fi
+
+    return 0
+}
+
+
+# Fonction vérifiant les dépendances
+function Dependencies
+{
+    # ${@} : Les arguments doivent être de type : commande:paquet ou commande (si paquet = commande)
+
+    local Dependencie Command Paquet
+
+    # Vérification des dépendances
+    for Dependencie in "${@}"
+    do
+        # Nom de la commande et du paquet Ubuntu associé
+        Command="${Dependencie%:*}"
+        Paquet="${Dependencie#*:}"
+
+        # Si la commande n'existe pas
+        if [[ -z $(which ${Command}) ]]
+        then
+            if [[ "${LANG}" == fr* ]]
+            then
+                ErrorMsg "Vignettes MKV" "La commande <b>${Command}</b> est introuvable et est nécessaire !<br><br>Pour installer la commande : <b>sudo apt install ${Paquet}</b>"
+            else
+                ErrorMsg "MKV Thumbnails" "The <b>${Command}</b> command cannot be found and is required!<br><br>To install the command: <b>sudo apt install ${Paquet}</b>"
+            fi
+
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+
+# Fonction d'affichage des erreurs
+function ErrorMsg
+{
+    # $1 : Titre à afficher
+    # $2 : Message à afficher
+    # $3 : Fichier de sortie
+
+    local Message
+
+    if [[ $(which kdialog) ]]
+    then
+        kdialog \
+            --title "${1}" \
+            --icon "video-x-matroska" \
+            --error "${2}"
+
+    else
+        # Nettoyage des <b> et <br>
+        Message="${2//<?(\/)b?(r)>}"
+
+        echo -e "${Message}" > "${3:-Message}-error.txt"
+    fi
+}
+
+
+
+
+###############################################
+## Suppression des fichiers attachés aux MKV ##
+###############################################
+# Vérification des dépendances
+Dependencies kdialog mkvpropedit:mkvtoolnix || exit 1
+
+# Liste visuelle des fichiers mkv
+printf -v Files '%s<br>' "${@}"
+
+# Message d'alerte pour éviter de lancer la commande par erreur
+if [[ "${LANG}" == fr* ]]
+then
+    kdialog \
+    --title "Confirmation de l'action" \
+    --icon "tag-delete" \
+    --warningcontinuecancel "<b>Attention</b>, vous êtes sur le point d'<b>effacer</b> les fichiers joints aux fichiers MKV ci-dessous :<br>${Files}<br><br>Que voulez-vous faire ?" || exit
+
+else
+    kdialog \
+    --title "Action confirmation" \
+    --icon "tag-delete" \
+    --warningcontinuecancel "<b>Warning</b>, you are going to <b>delete</b> the files attached to the MKV files below:<br>${Files}<br><br>What do you want to do?" || exit
+fi
+
+# Traite la liste des fichiers
+for File in "${@}"
+do
+    # Vérification du fichier MKV
+    MKVFileCheck "${File}" || continue
+
+    # Supprime le 1er fichier attaché tant qu'il y en a
+    while true
+    do
+        mkvpropedit --delete-attachment 1 "${File}" &> /dev/null || break
+    done
+done
+
+# Message de fin de traitement
+if [[ "${LANG}" == fr* ]]
+then
+    kdialog \
+    --title "Vignettes MKV" \
+    --icon "tag-delete" \
+    --dontagain hizo-service-menus.cfg:MKVDeleteAttachments \
+    --msgbox "Suppression des pièces jointes des fichiers MKV terminée."
+
+else
+    kdialog \
+    --title "MKV Thumbnails" \
+    --icon "tag-delete" \
+    --dontagain hizo-service-menus.cfg:MKVDeleteAttachments \
+    --msgbox "Removal of MKV file attachments completed."
+fi

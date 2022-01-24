@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+MimeType=video/x-matroska;
+Actions=_SEPARATOR_;mkv-delete-attachments
+TryExec=mkv-delete-attachments
+X-KDE-Submenu=MKV Actions
+
+[Desktop Action mkv-delete-attachments]
+Name=Delete all attached files
+Name[fr]=Supprimer tous les fichiers attachés
+Icon=tag-delete
+Exec=mkv-delete-attachments %U

@@ -1,0 +1,185 @@
+#!/bin/bash
+
+#############
+## Version ##
+#############
+# v0.1 - 2021/09/19
+
+
+# Fonction de vérification d'un fichier MKV
+function MKVFileCheck
+{
+    # $1 : Doit être une url
+
+    local ErrorText
+
+    # Vérifie que le fichier existe
+    if [[ ! -f "${1}" ]]
+    then
+        if [[ "${LANG}" == fr* ]]
+        then
+            ErrorText="Le fichier <b>${1}</b> n'existe pas !"
+        else
+            ErrorText="The <b>${1}</b> file doesn't exist!"
+        fi
+
+    # Vérifie que le fichier est de type matroska
+    elif [[ $(mimetype -b "${1}") != "video/x-matroska" ]]
+    then
+        if [[ "${LANG}" == fr* ]]
+        then
+            ErrorText="Le fichier <b>${1}</b> n'est pas un fichier matroska (mkv) !"
+        else
+            ErrorText="The <b>${1}</b> file isn't a matroska file (mkv)!"
+        fi
+    fi
+
+    # S'il y a une erreur
+    if [[ "${ErrorText}" ]]
+    then
+        if [[ "${LANG}" == fr* ]]
+        then
+            ErrorMsg "Titre du fichier MKV" "${ErrorText}" "${1}"
+        else
+            ErrorMsg "Title of the MKV file" "${ErrorText}" "${1}"
+        fi
+
+        return 1
+    fi
+
+    return 0
+}
+
+
+# Fonction vérifiant les dépendances
+function Dependencies
+{
+    # ${@} : Les arguments doivent être de type : commande:paquet ou commande (si paquet = commande)
+
+    local Dependencie Command Paquet
+
+    # Vérification des dépendances
+    for Dependencie in "${@}"
+    do
+        # Nom de la commande et du paquet Ubuntu associé
+        Command="${Dependencie%:*}"
+        Paquet="${Dependencie#*:}"
+
+        # Si la commande n'existe pas
+        if [[ -z $(which ${Command}) ]]
+        then
+            if [[ "${LANG}" == fr* ]]
+            then
+                ErrorMsg "Vignettes MKV" "La commande <b>${Command}</b> est introuvable et est nécessaire !<br><br>Pour installer la commande : <b>sudo apt install ${Paquet}</b>"
+            else
+                ErrorMsg "MKV Thumbnails" "The <b>${Command}</b> command cannot be found and is required!<br><br>To install the command: <b>sudo apt install ${Paquet}</b>"
+            fi
+
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+
+# Fonction d'affichage des erreurs
+function ErrorMsg
+{
+    # $1 : Titre à afficher
+    # $2 : Message à afficher
+    # $3 : Fichier de sortie
+
+    local Message
+
+    if [[ $(which kdialog) ]]
+    then
+        kdialog \
+            --title "${1}" \
+            --icon "video-x-matroska" \
+            --error "${2}"
+
+    else
+        # Nettoyage des <b> et <br>
+        Message="${2//<?(\/)b?(r)>}"
+
+        echo -e "${Message}" > "${3:-Message}-error.txt"
+    fi
+}
+
+
+
+
+###############################################
+## Suppression des fichiers attachés aux MKV ##
+###############################################
+# Vérification des dépendances
+Dependencies kdialog mkvpropedit:mkvtoolnix || exit 1
+
+# Vérification du fichier MKV
+MKVFileCheck "${1}" || exit
+
+# Message demandant le nouveau nom
+if [[ "${LANG}" == fr* ]]
+then
+    mapfile -t Attachments < <(kdialog \
+    --title "Choisir les pièces à joindre" \
+    --getopenfilename \
+    --multiple \
+    --separate-output \
+    --icon "tag-add")
+
+else
+    mapfile -t Attachments < <(kdialog \
+    --title "Choose the attachments" \
+    --getopenfilename \
+    --multiple \
+    --separate-output \
+    --icon "tag-add")
+fi
+
+# Traitement des fichiers à ajouter
+for File in "${Attachments[@]}"
+do
+    # Si le fichier n'existe pas
+    if [[ ! -e "${File}" ]]
+    then
+        if [[ "${LANG}" == fr* ]]
+        then
+            ErrorMsg "Pièces jointes au MKV" "Le fichier <b>${File}</b> est introuvable !<br><br>Impossible de le joindre au fichier MKV !"
+        else
+            ErrorMsg "MKV attachments" "The <b>${File}</b> file cannot be found!<br><br>Impossible to add it in the MKV file!"
+        fi
+
+        continue
+    fi
+
+    # Type du fichier
+    MimeType=$(mimetype -b "${File}")
+
+    # Ajout du fichier
+    if [[ "${LANG}" == fr* ]]
+    then
+        mkvpropedit "${1}" --attachment-name "${File##*/}" --attachment-mime-type "${MimeType}" --add-attachment "${File}" || ErrorMsg "Pièces jointes au MKV" "Une erreur est survenue lors de la tentative d'ajout du fichier ${File} !"
+    else
+        mkvpropedit "${1}" --attachment-name "${File##*/}" --attachment-mime-type "${MimeType}" --add-attachment "${File}" || ErrorMsg "MKV attachments" "An error occurred while trying to add the ${File} file!"
+    fi
+done
+
+# Message de fin de traitement
+if [[ "${LANG}" == fr* ]]
+then
+    kdialog \
+    --title "Pièces jointes au MKV" \
+    --icon "tag-add" \
+    --dontagain hizo-service-menus.cfg:MKVAddAttachments \
+    --msgbox "Ajout des pièces au fichier MKV terminé."
+
+else
+    kdialog \
+    --title "MKV attachments" \
+    --icon "tag-add" \
+    --dontagain hizo-service-menus.cfg:MKVAddAttachments \
+    --msgbox "Adding attachments in the MKV file completed."
+fi
+
