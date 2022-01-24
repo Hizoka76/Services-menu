@@ -20,7 +20,7 @@ Menu de service modifiant le titre d'un fichier MKV.
 ##
 
 ## English version:
-Différents services menu pour Dolphin.
+Different services menu for Dolphin.
 
 ### MKVAddAttachments:
 Service menus to add attachments in MKV file.
