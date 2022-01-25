@@ -39,9 +39,9 @@ function MKVFileCheck
     then
         if [[ "${LANG}" == fr* ]]
         then
-            ErrorMsg "Vignettes MKV" "${ErrorText}" "${1}"
+            ErrorMsg "Vignettes MKV" "${ErrorText}"
         else
-            ErrorMsg "MKV Thumbnails" "${ErrorText}" "${1}"
+            ErrorMsg "MKV Thumbnails" "${ErrorText}"
         fi
 
         return 1
@@ -88,7 +88,6 @@ function ErrorMsg
 {
     # $1 : Titre à afficher
     # $2 : Message à afficher
-    # $3 : Fichier de sortie
 
     local Message
 
@@ -98,12 +97,6 @@ function ErrorMsg
             --title "${1}" \
             --icon "video-x-matroska" \
             --error "${2}"
-
-    else
-        # Nettoyage des <b> et <br>
-        Message="${2//<?(\/)b?(r)>}"
-
-        echo -e "${Message}" > "${3:-Message}-error.txt"
     fi
 }
 
@@ -114,7 +107,7 @@ function ErrorMsg
 ## Suppression des fichiers attachés aux MKV ##
 ###############################################
 # Vérification des dépendances
-Dependencies kdialog mkvpropedit:mkvtoolnix || exit 1
+Dependencies mkvpropedit:mkvtoolnix || exit 1
 
 # Liste visuelle des fichiers mkv
 printf -v Files '%s<br>' "${@}"
@@ -146,6 +139,12 @@ do
         mkvpropedit --delete-attachment 1 "${File}" &> /dev/null || break
     done
 done
+
+# S'il y a le module de suppression des vignettes
+if which keneric-remove-thumbnails &>/dev/null
+then
+    keneric-remove-thumbnails "${@}"
+fi
 
 # Message de fin de traitement
 if [[ "${LANG}" == fr* ]]

@@ -39,9 +39,9 @@ function MKVFileCheck
     then
         if [[ "${LANG}" == fr* ]]
         then
-            ErrorMsg "Titre du fichier MKV" "${ErrorText}" "${1}"
+            ErrorMsg "Pièces joints aux MKV" "${ErrorText}"
         else
-            ErrorMsg "Title of the MKV file" "${ErrorText}" "${1}"
+            ErrorMsg "MKV attachments" "${ErrorText}"
         fi
 
         return 1
@@ -70,9 +70,9 @@ function Dependencies
         then
             if [[ "${LANG}" == fr* ]]
             then
-                ErrorMsg "Vignettes MKV" "La commande <b>${Command}</b> est introuvable et est nécessaire !<br><br>Pour installer la commande : <b>sudo apt install ${Paquet}</b>"
+                ErrorMsg "Pièces joints aux MKV" "La commande <b>${Command}</b> est introuvable et est nécessaire !<br><br>Pour installer la commande : <b>sudo apt install ${Paquet}</b>"
             else
-                ErrorMsg "MKV Thumbnails" "The <b>${Command}</b> command cannot be found and is required!<br><br>To install the command: <b>sudo apt install ${Paquet}</b>"
+                ErrorMsg "MKV attachments" "The <b>${Command}</b> command cannot be found and is required!<br><br>To install the command: <b>sudo apt install ${Paquet}</b>"
             fi
 
             return 1
@@ -88,7 +88,6 @@ function ErrorMsg
 {
     # $1 : Titre à afficher
     # $2 : Message à afficher
-    # $3 : Fichier de sortie
 
     local Message
 
@@ -96,14 +95,8 @@ function ErrorMsg
     then
         kdialog \
             --title "${1}" \
-            --icon "video-x-matroska" \
+            --icon "tag-new" \
             --error "${2}"
-
-    else
-        # Nettoyage des <b> et <br>
-        Message="${2//<?(\/)b?(r)>}"
-
-        echo -e "${Message}" > "${3:-Message}-error.txt"
     fi
 }
 
@@ -114,7 +107,7 @@ function ErrorMsg
 ## Suppression des fichiers attachés aux MKV ##
 ###############################################
 # Vérification des dépendances
-Dependencies kdialog mkvpropedit:mkvtoolnix || exit 1
+Dependencies mkvpropedit:mkvtoolnix || exit 1
 
 # Vérification du fichier MKV
 MKVFileCheck "${1}" || exit
@@ -165,6 +158,12 @@ do
         mkvpropedit "${1}" --attachment-name "${File##*/}" --attachment-mime-type "${MimeType}" --add-attachment "${File}" || ErrorMsg "MKV attachments" "An error occurred while trying to add the ${File} file!"
     fi
 done
+
+# S'il y a le module de suppression des vignettes
+if which keneric-remove-thumbnails &>/dev/null
+then
+    keneric-remove-thumbnails "${@}"
+fi
 
 # Message de fin de traitement
 if [[ "${LANG}" == fr* ]]

@@ -39,9 +39,9 @@ function MKVFileCheck
     then
         if [[ "${LANG}" == fr* ]]
         then
-            ErrorMsg "Titre du fichier MKV" "${ErrorText}" "${1}"
+            ErrorMsg "Titres des MKV" "${ErrorText}"
         else
-            ErrorMsg "Title of the MKV file" "${ErrorText}" "${1}"
+            ErrorMsg "MKV titles" "${ErrorText}"
         fi
 
         return 1
@@ -70,9 +70,9 @@ function Dependencies
         then
             if [[ "${LANG}" == fr* ]]
             then
-                ErrorMsg "Vignettes MKV" "La commande <b>${Command}</b> est introuvable et est nécessaire !<br><br>Pour installer la commande : <b>sudo apt install ${Paquet}</b>"
+                ErrorMsg "Titres des MKV" "La commande <b>${Command}</b> est introuvable et est nécessaire !<br><br>Pour installer la commande : <b>sudo apt install ${Paquet}</b>"
             else
-                ErrorMsg "MKV Thumbnails" "The <b>${Command}</b> command cannot be found and is required!<br><br>To install the command: <b>sudo apt install ${Paquet}</b>"
+                ErrorMsg "MKV titles" "The <b>${Command}</b> command cannot be found and is required!<br><br>To install the command: <b>sudo apt install ${Paquet}</b>"
             fi
 
             return 1
@@ -88,7 +88,6 @@ function ErrorMsg
 {
     # $1 : Titre à afficher
     # $2 : Message à afficher
-    # $3 : Fichier de sortie
 
     local Message
 
@@ -96,14 +95,8 @@ function ErrorMsg
     then
         kdialog \
             --title "${1}" \
-            --icon "video-x-matroska" \
+            --icon "tag-edit" \
             --error "${2}"
-
-    else
-        # Nettoyage des <b> et <br>
-        Message="${2//<?(\/)b?(r)>}"
-
-        echo -e "${Message}" > "${3:-Message}-error.txt"
     fi
 }
 
@@ -114,45 +107,49 @@ function ErrorMsg
 ## Suppression des fichiers attachés aux MKV ##
 ###############################################
 # Vérification des dépendances
-Dependencies kdialog mkvpropedit:mkvtoolnix mkvinfo:mkvtoolnix || exit 1
+Dependencies mkvpropedit:mkvtoolnix mkvinfo:mkvtoolnix || exit 1
 
-# Vérification du fichier MKV
-MKVFileCheck "${1}" || exit
+# Traitement des fichiers
+for File in "${@}"
+do
+    # Vérification du fichier MKV
+    MKVFileCheck "${File}" || continue
 
-# Titre actuel
-Title=$(LANG=en mkvinfo "${1}" | sed -n "/+ Title/ s/.*Title: //p")
+    # Titre actuel
+    Title=$(LANG=en mkvinfo "${File}" | sed -n "/+ Title/ s/.*Title: //p")
 
-# Message demandant le nouveau nom
-if [[ "${LANG}" == fr* ]]
-then
-    NewTitle=$(kdialog \
-    --title "Nouveau titre" \
-    --icon "tag-edit" \
-    --inputbox "Indiquer le nouveau titre du fichier MKV :" "${Title}") || exit
+    # Message demandant le nouveau nom
+    if [[ "${LANG}" == fr* ]]
+    then
+        NewTitle=$(kdialog \
+        --title "Nouveau titre" \
+        --icon "tag-edit" \
+        --inputbox "Indiquer le nouveau titre du fichier MKV :" "${Title}") || continue
 
-else
-    NewTitle=$(kdialog \
-    --title "New title" \
-    --icon "tag-edit" \
-    --inputbox "Set the new title of the MKV file:" "${Title}") || exit
-fi
+    else
+        NewTitle=$(kdialog \
+        --title "New title" \
+        --icon "tag-edit" \
+        --inputbox "Set the new title of the MKV file:" "${Title}") || continue
+    fi
 
-# Mise à jour du nouveau titre
-mkvpropedit "${1}" --edit info -s "title=${NewTitle}"
+    # Mise à jour du nouveau titre
+    mkvpropedit "${File}" --edit info -s "title=${NewTitle}"
+done
 
 # Message de fin de traitement
 if [[ "${LANG}" == fr* ]]
 then
     kdialog \
-    --title "itre du fichier MKV" \
+    --title "Titres des fichiers MKV" \
     --icon "tag-edit" \
     --dontagain hizo-service-menus.cfg:MKVEditTitle \
-    --msgbox "Mise à jour du titre du fichier MKV terminée."
+    --msgbox "Mise à jour des titres des fichiers MKV terminée."
 
 else
     kdialog \
-    --title "Title of the MKV file" \
+    --title "Title of the MKV files" \
     --icon "tag-edit" \
     --dontagain hizo-service-menus.cfg:MKVEditTitle \
-    --msgbox "Update of the title of the MKV file completed."
+    --msgbox "Update of the titles of the MKV files completed."
 fi
