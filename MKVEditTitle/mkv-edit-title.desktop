@@ -2,7 +2,7 @@
 Type=Service
 X-KDE-ServiceTypes=KonqPopupMenu/Plugin
 MimeType=video/x-matroska;
-Actions=_SEPARATOR_;mkv-edit-title
+Actions=_SEPARATOR_;mkv-edit-title;mkv-delete-title
 TryExec=mkv-edit-title
 X-KDE-Submenu=MKV Actions
 
@@ -11,3 +11,9 @@ Name=Edit the title of the files
 Name[fr]=Modifier le titre des fichiers
 Icon=tag-edit
 Exec=mkv-edit-title %U
+
+[Desktop Action mkv-delete-title]
+Name=Delete the title of the files
+Name[fr]=Effacer le titre des fichiers
+Icon=tag-delete
+Exec=mkv-delete-title %U
