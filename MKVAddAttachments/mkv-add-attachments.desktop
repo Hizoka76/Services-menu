@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Service
 X-KDE-ServiceTypes=KonqPopupMenu/Plugin
-MimeType=video/x-matroska;
+MimeType=video/x-matroska;video/x-matroska-3d;
 Actions=_SEPARATOR_;mkv-add-attachments
 TryExec=mkv-add-attachments
 X-KDE-Submenu=MKV Actions
